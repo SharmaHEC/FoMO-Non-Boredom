@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Virtual Horse Race – FoMO + Non-boring</title>
+  <title>Horse Race Game Prototype</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -24,7 +24,6 @@
       text-align: center;
       margin: 0 0 8px 0;
       border: 1px solid #f59e0b;
-      display: none;
     }
 
     .screen {
@@ -88,6 +87,7 @@
       background: #d1d5db;
       padding: 8px 0;
       height: 260px;
+      transition: background 0.6s ease;
     }
 
     /* Non-boring background and speed lines */
@@ -113,6 +113,17 @@
     @keyframes speedlines {
       from { transform: translateX(0); }
       to   { transform: translateX(-40px); }
+    }
+
+    /* Track heat-up effect for exciting mode */
+    #race-track.exciting-mode.heat-1 {
+      background: linear-gradient(120deg, #1a0a2e 0%, #16213e 40%, #1a0a2e 100%);
+    }
+    #race-track.exciting-mode.heat-2 {
+      background: linear-gradient(120deg, #2d0a0a 0%, #1a1a2e 40%, #2d0a0a 100%);
+    }
+    #race-track.exciting-mode.heat-3 {
+      background: linear-gradient(120deg, #3d0a0a 0%, #2a1a1e 40%, #3d0a0a 100%);
     }
 
     .lane {
@@ -161,7 +172,7 @@
     }
     .horse.chosen { background: #22c55e; }
 
-    /* Non-boring style: circular emoji horse */
+    /* Non-boring style: circular emoji horse facing right & bobbing, with glow */
     .horse.exciting {
       width: 44px;
       height: 44px;
@@ -175,6 +186,32 @@
       background: #22c55e;
       box-shadow: 0 0 14px rgba(34, 197, 94, 0.95);
     }
+
+    /* Position badge on horse */
+    .pos-badge {
+      position: absolute;
+      top: -8px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 2;
+      border: 2px solid rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .pos-badge.visible { opacity: 1; }
+    .horse.exciting .pos-badge { transform: scaleX(-1); }
+    .pos-badge.pos-1 { background: #fbbf24; color: #111; }
+    .pos-badge.pos-2 { background: #d1d5db; color: #111; }
+    .pos-badge.pos-3 { background: #d97706; color: #fff; }
+    .pos-badge.pos-4 { background: #6b7280; color: #fff; }
 
     .horse-trail {
       position: absolute;
@@ -191,9 +228,13 @@
     }
     .horse-trail.visible { opacity: 0.7; }
 
+    /* Surge feedback on cheer (chosen horse only) */
     .horse.surge {
       transform: translateY(-50%) scale(1.18);
       box-shadow: 0 0 22px rgba(59, 130, 246, 0.95);
+    }
+    .horse.exciting.surge {
+      transform: translateY(-50%) scale(1.18) scaleX(-1);
     }
 
     @keyframes bob {
@@ -203,6 +244,48 @@
     @keyframes glow {
       from { box-shadow: 0 0 5px rgba(250, 204, 21, 0.5); }
       to   { box-shadow: 0 0 14px rgba(250, 204, 21, 0.95); }
+    }
+
+    /* Screen shake */
+    @keyframes shake {
+      0%   { transform: translate(0, 0); }
+      20%  { transform: translate(-3px, 2px); }
+      40%  { transform: translate(3px, -2px); }
+      60%  { transform: translate(-2px, 3px); }
+      80%  { transform: translate(2px, -1px); }
+      100% { transform: translate(0, 0); }
+    }
+    #race-track.shaking {
+      animation: shake 0.35s ease-out;
+    }
+
+    /* Particle system */
+    .particle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 5;
+      border-radius: 50%;
+      animation: particleBurst 0.7s ease-out forwards;
+    }
+    @keyframes particleBurst {
+      0%   { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.3) translateY(-30px); }
+    }
+
+    /* Sparkle around chosen horse in exciting mode */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 3;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fbbf24;
+      animation: sparkleFade 0.6s ease-out forwards;
+    }
+    @keyframes sparkleFade {
+      0%   { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0) translateY(-15px); }
     }
 
     .finish-line {
@@ -225,17 +308,61 @@
       opacity: 0.75;
     }
     #race-track.exciting-mode .finish-line {
-      background-image: linear-gradient(
-        45deg,
-        #e5e7eb 25%,
-        transparent 25%,
-        transparent 50%,
-        #e5e7eb 50%,
-        #e5e7eb 75%,
-        transparent 75%,
-        transparent
-      );
-      opacity: 0.9;
+      width: 28px;
+      right: 2px;
+      background-image:
+        linear-gradient(to right,
+          rgba(0,0,0,0) 0%,
+          rgba(0,0,0,0.10) 100%
+        ),
+        repeating-conic-gradient(
+          #fff 0% 25%, #111 25% 50%
+        );
+      background-size: 28px 260px, 14px 14px;
+      opacity: 1;
+      border-left: 2px solid #fbbf24;
+      border-right: 2px solid #fbbf24;
+      box-shadow:
+        -4px 0 18px 4px rgba(251, 191, 36, 0.45),
+         4px 0 18px 4px rgba(251, 191, 36, 0.45),
+         0 0 8px 2px rgba(251, 191, 36, 0.25);
+      z-index: 3;
+      animation: finishGlow 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes finishGlow {
+      from { box-shadow: -4px 0 14px 3px rgba(251,191,36,0.35), 4px 0 14px 3px rgba(251,191,36,0.35), 0 0 6px 2px rgba(251,191,36,0.2); }
+      to   { box-shadow: -4px 0 24px 6px rgba(251,191,36,0.6), 4px 0 24px 6px rgba(251,191,36,0.6), 0 0 12px 4px rgba(251,191,36,0.4); }
+    }
+    /* Pulsing glow integrated into the finish-line element itself */
+    /* FINISH flag labels — top and bottom */
+    #race-track.exciting-mode .finish-line::after {
+      content: "\1F3C1";
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      line-height: 1;
+      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
+      pointer-events: none;
+      animation: flagWave 0.8s ease-in-out infinite alternate;
+    }
+    #race-track.exciting-mode .finish-line::before {
+      content: "\1F3C1";
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      line-height: 1;
+      filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
+      pointer-events: none;
+      animation: flagWave 0.8s ease-in-out infinite alternate;
+      box-shadow: none;
+    }
+    @keyframes flagWave {
+      from { transform: translateX(-50%) rotate(-5deg); }
+      to   { transform: translateX(-50%) rotate(5deg); }
     }
 
     #fomo-overlay {
@@ -254,13 +381,60 @@
     }
     #fomo-overlay.hidden { display: none; }
 
+    /* Leaderboard styles */
+    .leaderboard-table {
+      width: 100%;
+      max-width: 400px;
+      margin: 12px auto;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+    }
+    .leaderboard-table th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      padding: 4px 12px;
+      text-align: left;
+    }
+    .leaderboard-table th:first-child { text-align: center; }
+    .leaderboard-row {
+      border-radius: 8px;
+    }
+    .leaderboard-row td {
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 15px;
+      background: #f3f4f6;
+    }
+    .leaderboard-row td:first-child {
+      border-radius: 8px 0 0 8px;
+      text-align: center;
+      width: 50px;
+    }
+    .leaderboard-row td:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+    .leaderboard-row.rank-1 td { background: #fef3c7; }
+    .leaderboard-row.rank-2 td { background: #f1f5f9; }
+    .leaderboard-row.rank-3 td { background: #fff7ed; }
+    .leaderboard-row.is-you td { border: 2px solid #2563eb; }
+    .rank-medal { font-size: 20px; }
+
+    /* Commentary/status feed */
     #status-feed {
       margin-top: 10px;
       font-size: 13px;
       min-height: 18px;
       color: #374151;
     }
-    #status-feed.exciting-feed { color: #111827; }
+    #status-feed.exciting-feed {
+      color: #111827;
+      font-weight: 600;
+      font-size: 14px;
+      min-height: 40px;
+      padding: 6px 0;
+    }
     .status-msg { display: inline-block; animation: statusPop 0.45s ease-out; }
     @keyframes statusPop {
       0%   { transform: translateY(6px); opacity: 0; }
@@ -268,13 +442,101 @@
       100% { transform: translateY(0); opacity: 1; }
     }
 
-    /* Stamina / cheer */
+    /* Dramatic commentary flash */
+    .status-msg.dramatic {
+      color: #dc2626;
+      font-size: 15px;
+      font-weight: 700;
+      animation: dramaticPop 0.5s ease-out;
+    }
+    @keyframes dramaticPop {
+      0%   { transform: translateY(8px) scale(0.9); opacity: 0; }
+      50%  { transform: translateY(-2px) scale(1.05); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* Progress bar (exciting only) */
+    #race-progress-wrap {
+      margin-top: 8px;
+      display: none;
+    }
+    #race-progress-wrap.visible { display: block; }
+    #race-progress-label {
+      font-size: 11px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+    #race-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    #race-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+      transition: width 0.3s ease;
+      position: relative;
+    }
+    #race-progress-fill::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: -2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 6px rgba(255,255,255,0.8);
+    }
+    #race-progress-fill.pulsing {
+      animation: progressPulse 0.8s infinite alternate;
+    }
+    @keyframes progressPulse {
+      from { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4); }
+      to   { box-shadow: 0 0 12px rgba(250, 204, 21, 0.9); }
+    }
+
+    #log-output {
+      width: 100%;
+      height: 200px;
+      margin-top: 8px;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-right: 4px;
+      margin-bottom: 4px;
+      background: #e5e7eb;
+    }
+    .tag.on { background: #22c55e; color: #fff; }
+    .meta-line { font-size: 12px; margin-bottom: 4px; }
+    .cond-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* Stamina bar (cheer realism) */
     #cheer-panel {
       margin-top: 10px;
       background: #f3f4f6;
       border-radius: 10px;
       padding: 10px;
     }
+
     .bar {
       width: 100%;
       height: 10px;
@@ -301,7 +563,7 @@
       margin-top: 6px;
     }
 
-    /* End-of-task rating layout */
+    /* Simple end-of-task rating layout */
     #ratings-block {
       margin-top: 12px;
       padding: 10px;
@@ -309,7 +571,9 @@
       border-radius: 8px;
       font-size: 14px;
     }
-    .rating-item { margin-bottom: 10px; }
+    .rating-item {
+      margin-bottom: 10px;
+    }
     .rating-scale {
       display: flex;
       gap: 4px;
@@ -320,12 +584,104 @@
       font-size: 12px;
       cursor: pointer;
     }
+
+    /* Podium layout for Non-FoMO + Non-boring result */
+    .podium-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+      margin: 20px auto 12px;
+      max-width: 420px;
+    }
+    .podium-col {
+      flex: 1;
+      text-align: center;
+      border-radius: 10px;
+      padding: 14px 6px 12px;
+      position: relative;
+    }
+    /* Winner (middle) — tallest */
+    .podium-col.podium-1 {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      min-height: 150px;
+      order: 2;
+    }
+    /* Rank 2 (left) */
+    .podium-col.podium-2 {
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      border: 2px solid #94a3b8;
+      min-height: 120px;
+      order: 1;
+    }
+    /* Rank 3 (right) */
+    .podium-col.podium-3 {
+      background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+      border: 2px solid #d97706;
+      min-height: 100px;
+      order: 3;
+    }
+    .podium-medal {
+      font-size: 32px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .podium-rank {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .podium-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+    }
+    .podium-col.podium-1 .podium-name {
+      color: #92400e;
+      font-size: 17px;
+    }
+    .podium-col.podium-1 .podium-rank {
+      color: #92400e;
+    }
+    .podium-you-tag {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Lead change flash overlay */
+    .lead-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      border-radius: 8px;
+      opacity: 0;
+      animation: flashPulse 0.6s ease-out forwards;
+    }
+    .lead-flash.player-lead { background: radial-gradient(ellipse at center, rgba(34,197,94,0.3), transparent 70%); }
+    .lead-flash.rival-lead { background: radial-gradient(ellipse at center, rgba(239,68,68,0.25), transparent 70%); }
+    @keyframes flashPulse {
+      0%   { opacity: 0; }
+      30%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 
 <body>
   <div id="game-root">
-    <!-- Intro (first page) -->
+    <!-- Instructions -->
     <div id="screen-intro" class="screen active">
       <h2>Virtual Horse Race</h2>
       <p>
@@ -339,14 +695,13 @@
         <li>Once the race begins, you cannot change your chosen horse.</li>
       </ol>
       <p id="cheer-instructions">
-        During the race you will see a button labeled <strong>“Cheer your horse”</strong>.
+         During the race you will see a button labeled <strong>"Cheer your horse"</strong>.
         Each press spends some of your limited <strong>cheer energy</strong> to give your horse
         a short boost. Your cheer energy bar refills gradually between presses, which
         limits how often you can cheer. Remember, other players also have a similar option.
       </p>
       <p id="bonus-instructions">
-        In addition, if you win this race, you would qualify to take part in a lottery
-        in which the winner receives an iPad.
+        <!-- This text will be filled in by the script depending on the condition. -->
       </p>
       <button id="btn-intro-continue" class="primary">Continue</button>
     </div>
@@ -369,6 +724,17 @@
         <div id="fomo-overlay" class="hidden"></div>
       </div>
 
+      <!-- Race progress bar (exciting only) -->
+      <div id="race-progress-wrap">
+        <div id="race-progress-label">
+          <span>Race Progress</span>
+          <span id="race-progress-pct">0%</span>
+        </div>
+        <div id="race-progress-bar">
+          <div id="race-progress-fill"></div>
+        </div>
+      </div>
+
       <button id="boost-btn" class="primary" style="margin-top:8px;">
         Cheer your horse
       </button>
@@ -389,37 +755,11 @@
     <div id="screen-end" class="screen">
       <h3>Thank you</h3>
       <p id="end-message-main"></p>
-
+      <div id="leaderboard" style="display:none;"></div>
       <div id="ratings-block">
-        <p style="margin-bottom:8px;">
-          Please answer below questions about your experience in this game. Also, please update the google sheet accordingly.
+        <p style="margin-bottom:8px">
+          Please update the excel Sheet for this condition.
         </p>
-
-        <div class="rating-item">
-          <div>By the end of you partcipation in this game, to what extent did you feel bored? 1 (Not at all) to 7 (Extremely)</div>
-          <div class="rating-scale" id="rating-boredom">
-            <label><input type="radio" name="boredom" value="1"> 1 </label>
-            <label><input type="radio" name="boredom" value="2"> 2</label>
-            <label><input type="radio" name="boredom" value="3"> 3</label>
-            <label><input type="radio" name="boredom" value="4"> 4</label>
-            <label><input type="radio" name="boredom" value="5"> 5</label>
-            <label><input type="radio" name="boredom" value="6"> 6</label>
-            <label><input type="radio" name="boredom" value="7"> 7 </label>
-          </div>
-        </div>
-
-        <div class="rating-item">
-          <div>By the end of you partcipation in this game, to what extent did you feel you were missing out on something? 1 (Not at all) to 7 (Extremely)</div>
-          <div class="rating-scale" id="rating-fomo">
-            <label><input type="radio" name="fomo_rating" value="1"> 1 </label>
-            <label><input type="radio" name="fomo_rating" value="2"> 2</label>
-            <label><input type="radio" name="fomo_rating" value="3"> 3</label>
-            <label><input type="radio" name="fomo_rating" value="4"> 4</label>
-            <label><input type="radio" name="fomo_rating" value="5"> 5</label>
-            <label><input type="radio" name="fomo_rating" value="6"> 6</label>
-            <label><input type="radio" name="fomo_rating" value="7"> 7 </label>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -433,16 +773,15 @@
       return sp.get("pid") || null;
     }
 
-    // Hard-code FoMO + Non-boring condition
     var CONDITION = {
       participantId: getParticipantId(),
       FOMO: true,
-      EXCITING: true
+      EXCITING: true  // EXCITING = Non-boring, so Boredom = !EXCITING
     };
 
     function conditionHasLottery() {
-      // In this condition, lottery is present
-      return true;
+      // Lottery in all three conditions except Non-FoMO + Boring
+      return !(CONDITION.FOMO === false && CONDITION.EXCITING === false);
     }
 
     function updateBonusBanner() {
@@ -622,6 +961,253 @@
       o.stop(now + 0.22);
     }
 
+    /* NEW: Crowd roar burst on lead changes */
+    function playCrowdRoar() {
+      if (!CONDITION.EXCITING) return;
+      ensureAudioContext();
+      if (!audio.ctx) return;
+      if (audio.ctx.state === "suspended") {
+        audio.ctx.resume().catch(function(){});
+      }
+
+      var now = audio.ctx.currentTime;
+
+      // Short noise burst (crowd roar)
+      var bufSz = Math.floor(audio.ctx.sampleRate * 0.5);
+      var buf = audio.ctx.createBuffer(1, bufSz, audio.ctx.sampleRate);
+      var ch = buf.getChannelData(0);
+      for (var i = 0; i < bufSz; i++) {
+        ch[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      var src = audio.ctx.createBufferSource();
+      src.buffer = buf;
+
+      var filt = audio.ctx.createBiquadFilter();
+      filt.type = "bandpass";
+      filt.frequency.value = 1200;
+      filt.Q.value = 0.5;
+
+      var g = audio.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.35, now + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(audio.master);
+      src.start(now);
+      src.stop(now + 0.5);
+
+      // Rising tone
+      var o = audio.ctx.createOscillator();
+      var og = audio.ctx.createGain();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(800, now + 0.25);
+      og.gain.setValueAtTime(0.0001, now);
+      og.gain.exponentialRampToValueAtTime(0.12, now + 0.06);
+      og.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      o.connect(og);
+      og.connect(audio.master);
+      o.start(now);
+      o.stop(now + 0.4);
+    }
+
+    /***********************
+     * VISUAL FX (EXCITING)*
+     ***********************/
+    function spawnParticles(parentEl, x, y, count, colors) {
+      if (!CONDITION.EXCITING) return;
+      for (var i = 0; i < count; i++) {
+        var p = document.createElement("div");
+        p.className = "particle";
+        var size = 4 + Math.random() * 6;
+        p.style.width = size + "px";
+        p.style.height = size + "px";
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.left = (x + (Math.random() - 0.5) * 40) + "px";
+        p.style.top = (y + (Math.random() - 0.5) * 30) + "px";
+        parentEl.appendChild(p);
+        (function(elem) {
+          setTimeout(function() {
+            if (elem.parentElement) elem.parentElement.removeChild(elem);
+          }, 750);
+        })(p);
+      }
+    }
+
+    function spawnTrail(laneEl, pos) {
+      var trail = document.createElement("div");
+      trail.className = "horse-trail";
+      laneEl.appendChild(trail);
+      var leftPct = pos - 4;
+      if (leftPct < 0) leftPct = 0;
+      trail.style.left = leftPct + "%";
+      requestAnimationFrame(function() {
+        trail.classList.add("visible");
+      });
+      setTimeout(function() {
+        trail.classList.remove("visible");
+        setTimeout(function() {
+          if (trail.parentElement) trail.parentElement.removeChild(trail);
+        }, 160);
+      }, 160);
+    }
+
+    function shakeTrack() {
+      if (!CONDITION.EXCITING) return;
+      var track = el("race-track");
+      if (!track) return;
+      track.classList.remove("shaking");
+      void track.offsetWidth;
+      track.classList.add("shaking");
+      setTimeout(function() { track.classList.remove("shaking"); }, 400);
+    }
+
+    function flashLeadChange(isPlayerLead) {
+      if (!CONDITION.EXCITING) return;
+      var track = el("race-track");
+      if (!track) return;
+      var flash = document.createElement("div");
+      flash.className = "lead-flash " + (isPlayerLead ? "player-lead" : "rival-lead");
+      track.appendChild(flash);
+      setTimeout(function() {
+        if (flash.parentElement) flash.parentElement.removeChild(flash);
+      }, 650);
+    }
+
+    function spawnSparkles(horseEl) {
+      if (!CONDITION.EXCITING || !horseEl || !horseEl.parentElement) return;
+      var lane = horseEl.parentElement;
+      var rect = horseEl.getBoundingClientRect();
+      var laneRect = lane.getBoundingClientRect();
+      var cx = rect.left - laneRect.left + rect.width / 2;
+      var cy = rect.top - laneRect.top + rect.height / 2;
+      for (var i = 0; i < 4; i++) {
+        var s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.left = (cx + (Math.random() - 0.5) * 30) + "px";
+        s.style.top = (cy + (Math.random() - 0.5) * 20) + "px";
+        lane.appendChild(s);
+        (function(elem) {
+          setTimeout(function() {
+            if (elem.parentElement) elem.parentElement.removeChild(elem);
+          }, 650);
+        })(s);
+      }
+    }
+
+    function updateHeatLevel(elapsed, total) {
+      if (!CONDITION.EXCITING) return;
+      var track = el("race-track");
+      if (!track) return;
+      var pct = elapsed / total;
+      track.classList.remove("heat-1", "heat-2", "heat-3");
+      if (pct > 0.75) track.classList.add("heat-3");
+      else if (pct > 0.5) track.classList.add("heat-2");
+      else if (pct > 0.25) track.classList.add("heat-1");
+    }
+
+    function updatePositionBadges() {
+      if (!CONDITION.EXCITING) return;
+      var sorted = horses.slice().sort(function(a, b) { return b.pos - a.pos; });
+      for (var i = 0; i < sorted.length; i++) {
+        var h = sorted[i];
+        var badge = h.el.querySelector(".pos-badge");
+        if (!badge) continue;
+        badge.textContent = (i + 1);
+        badge.className = "pos-badge visible pos-" + (i + 1);
+      }
+    }
+
+    function updateProgressBar(elapsed, total) {
+      return; // Race Progress removed from all conditions
+      var pct = Math.min(100, Math.round((elapsed / total) * 100));
+      var fill = el("race-progress-fill");
+      var label = el("race-progress-pct");
+      if (fill) {
+        fill.style.width = pct + "%";
+        if (pct > 70) fill.classList.add("pulsing");
+        else fill.classList.remove("pulsing");
+      }
+      if (label) label.textContent = pct + "%";
+    }
+
+    /***********************
+     * COMMENTARY SYSTEM   *
+     ***********************/
+    var commentaryPool = {
+      playerLeading: [
+        "Your horse surges ahead!",
+        "You're in the lead — hold on tight!",
+        "Incredible pace from your horse!",
+        "Your horse is flying!",
+        "The crowd is cheering — you're leading!",
+        "What a run! Your horse takes the lead!",
+        "Your horse breaks away from the pack!"
+      ],
+      rivalLeading: [
+        "{rival} takes the lead!",
+        "{rival} pushes ahead!",
+        "{rival}'s horse is making a move!",
+        "Watch out — {rival} is overtaking!",
+        "{rival} pulls into first place!",
+        "The lead changes hands — {rival} is ahead!"
+      ],
+      closeRace: [
+        "It's neck and neck!",
+        "This race is incredibly close!",
+        "Just a hair separates the leaders!",
+        "What a tight battle at the front!",
+        "The top two are nearly side by side!",
+        "Nobody is giving an inch!",
+        "The crowd is on their feet!"
+      ],
+      finalStretch: [
+        "They're approaching the final stretch!",
+        "The finish line is in sight!",
+        "It all comes down to this!",
+        "Last chance to make a move!",
+        "The race is entering its climax!",
+        "Who will take it? The finish is near!"
+      ],
+      cheerReaction: [
+        "The crowd goes wild!",
+        "Listen to that roar!",
+        "Your cheering is making a difference!",
+        "The energy is electric!",
+        "That cheer gave a real boost!"
+      ]
+    };
+    var lastCommentaryType = "";
+
+    function getCommentary(type, data) {
+      var pool = commentaryPool[type];
+      if (!pool || pool.length === 0) return null;
+      var msg = pool[Math.floor(Math.random() * pool.length)];
+      if (data && data.rival) {
+        msg = msg.replace(/\{rival\}/g, data.rival);
+      }
+      return msg;
+    }
+
+    function showCommentary(type, data, dramatic) {
+      if (!CONDITION.EXCITING) return;
+      // Avoid repeating same type back-to-back
+      if (type === lastCommentaryType && Math.random() < 0.5) return;
+      lastCommentaryType = type;
+
+      var msg = getCommentary(type, data);
+      if (!msg) return;
+
+      var feed = el("status-feed");
+      if (!feed) return;
+
+      var cls = dramatic ? "status-msg dramatic" : "status-msg";
+      feed.innerHTML = '<span class="' + cls + '">' + msg + '</span>';
+      logEvent("commentary", { type: type, message: msg });
+    }
+
     /***********************
      * GAME STATE          *
      ***********************/
@@ -638,6 +1224,8 @@
 
     var lastLeaderUpdateTime = 0;
     var LEADER_UPDATE_INTERVAL_MS = 2000;
+    var lastLeaderId = null;        // track lead changes
+    var leadChangeCount = 0;
 
     var cheer = {
       stamina: 1.0,
@@ -650,9 +1238,13 @@
     };
 
     function configureCheerForCondition() {
-      // In this file, condition is always exciting
-      cheer.staminaRegenPerSec = 0.055;
-      cheer.cooldownMs = 600;
+      if (CONDITION.EXCITING) {
+        cheer.staminaRegenPerSec = 0.055;
+        cheer.cooldownMs = 600;
+      } else {
+        cheer.staminaRegenPerSec = 0.02;
+        cheer.cooldownMs = 1000;
+      }
     }
 
     function updateStaminaUI() {
@@ -664,13 +1256,48 @@
     }
 
     /***********************
-     * UI INIT             *
+     * CONDITION SELECTION *
+     ***********************/
+    function initConditionUI() {
+      var bonusInstr = el("bonus-instructions");
+      if (bonusInstr) {
+        bonusInstr.textContent =
+          "In addition, if you win this race, you would qualify to take part " +
+          "in a lottery in which the winner receives an iPad.";
+      }
+
+      var cheerInstr = el("cheer-instructions");
+      if (cheerInstr) {
+        cheerInstr.style.display = "block";
+      }
+
+      logEvent("condition_selected", { FOMO: CONDITION.FOMO, EXCITING: CONDITION.EXCITING });
+    }
+
+    /***********************
+     * INITIAL UI SETUP    *
      ***********************/
     function initUIConditionTags() {
-      // No debug tags in this version; just audio-note for consistency
+      var fTag = el("tag-fomo");
+      var eTag = el("tag-exc");
+
+      var fomoYes = CONDITION.FOMO === true;
+      var boredomYes = CONDITION.EXCITING === false;
+
+      if (fTag && eTag) {
+        fTag.textContent = "FoMO: " + (fomoYes ? "Yes" : "No");
+        eTag.textContent = "Boredom: " + (boredomYes ? "Yes" : "No");
+        fTag.classList.toggle("on", fomoYes);
+        eTag.classList.toggle("on", boredomYes);
+      }
+
       var note = el("audio-note");
       if (note) {
-        note.textContent = "";
+        if (CONDITION.EXCITING) {
+          note.textContent = "  ";
+        } else {
+          note.textContent = "  ";
+        }
       }
     }
 
@@ -709,9 +1336,9 @@
       confirmBtn.addEventListener("click", function() {
         if (!horseChosen) return;
         logEvent("horse_chosen", { horse: horseChosen });
-
         startExcitingAmbience();
-        startFomoRace();   // Always FoMO in this file
+        if (CONDITION.FOMO) startFomoRace();
+        else startNonFomoRace();
       });
     }
 
@@ -736,7 +1363,6 @@
 
       btn.onpointerdown = function(ev) {
         ev.preventDefault();
-
         startExcitingAmbience();
 
         var nowMs = performance.now();
@@ -761,25 +1387,26 @@
         if (chosen && chosen.el) {
           chosen.el.classList.add("surge");
 
-          // Visual trail
-          var trail = document.createElement("div");
-          trail.className = "horse-trail";
+          // Trail behind chosen horse
           var laneEl = chosen.el.parentElement;
           if (laneEl) {
-            laneEl.appendChild(trail);
-            var leftPct = chosen.pos - 4;
-            if (leftPct < 0) leftPct = 0;
-            trail.style.left = leftPct + "%";
-            requestAnimationFrame(function() {
-              trail.classList.add("visible");
-            });
-            setTimeout(function() {
-              trail.classList.remove("visible");
-              setTimeout(function() {
-                if (trail.parentElement) trail.parentElement.removeChild(trail);
-              }, 160);
-            }, 160);
+            spawnTrail(laneEl, chosen.pos);
+
+            // NEW: Particles on cheer
+            var rect = chosen.el.getBoundingClientRect();
+            var laneRect = laneEl.getBoundingClientRect();
+            spawnParticles(laneEl,
+              rect.left - laneRect.left + rect.width / 2,
+              rect.top - laneRect.top + rect.height / 2,
+              6, ["#3b82f6", "#60a5fa", "#93c5fd", "#fbbf24"]
+            );
+
+            // NEW: Sparkles
+            spawnSparkles(chosen.el);
           }
+
+          // NEW: Screen shake on cheer
+          shakeTrack();
 
           setTimeout(function() {
             if (chosen && chosen.el) chosen.el.classList.remove("surge");
@@ -791,6 +1418,11 @@
         var intensity01 = Math.max(0.15, Math.min(1.0, cheer.surge));
         playCheerSfx(intensity01);
 
+        // NEW: Occasional cheer commentary
+        if (Math.random() < 0.35) {
+          showCommentary("cheerReaction", null, false);
+        }
+
         logEvent("cheer_use", {
           stamina: +cheer.stamina.toFixed(3),
           surge: +cheer.surge.toFixed(3)
@@ -799,12 +1431,9 @@
     }
 
     /***********************
-     * FOMO FLOW           *
+     * RACE UI SETUP HELPER*
      ***********************/
-    function startFomoRace() {
-      RACE_TOTAL_MS = 240 * 1000;   // 4 minutes
-      FOMO_INTERRUPT_MS = 180 * 1000;  // interrupt at 3 minutes
-
+    function startRaceUI() {
       showScreen("race");
       initUIConditionTags();
       updateBonusBanner();
@@ -812,10 +1441,56 @@
 
       var boostBtn = el("boost-btn");
       var cheerPanel = el("cheer-panel");
-      if (boostBtn) boostBtn.style.display = "inline-block";
-      if (cheerPanel) cheerPanel.style.display = "block";
-      setupBoostButton();
+      var progressWrap = el("race-progress-wrap");
 
+      if (CONDITION.EXCITING) {
+        if (boostBtn) boostBtn.style.display = "inline-block";
+        if (cheerPanel) cheerPanel.style.display = "block";
+        setupBoostButton();
+      } else {
+        if (boostBtn) boostBtn.style.display = "none";
+        if (cheerPanel) cheerPanel.style.display = "none";
+        if (progressWrap) progressWrap.classList.remove("visible");
+      }
+
+      // Reset lead tracking
+      lastLeaderId = null;
+      leadChangeCount = 0;
+    }
+
+    /***********************
+     * NON-FOMO FLOW       *
+     ***********************/
+    function startNonFomoRace() {
+      if (CONDITION.EXCITING) {
+        RACE_TOTAL_MS = 240 * 1000;
+      } else {
+        RACE_TOTAL_MS = 240 * 1000;
+      }
+      FOMO_INTERRUPT_MS = null;
+
+      startRaceUI();
+      logEvent("nonfomo_race_start");
+      startRaceAnimation();
+
+      raceEndTimeout = setTimeout(function() {
+        if (!raceEnded) endRace("time_up");
+      }, RACE_TOTAL_MS + 2000);
+    }
+
+    /***********************
+     * FOMO FLOW           *
+     ***********************/
+    function startFomoRace() {
+      if (CONDITION.EXCITING) {
+        RACE_TOTAL_MS = 240 * 1000;
+        FOMO_INTERRUPT_MS = 180 * 1000;
+      } else {
+        RACE_TOTAL_MS = 240 * 1000;
+        FOMO_INTERRUPT_MS = 180 * 1000;
+      }
+
+      startRaceUI();
       logEvent("fomo_race_start");
       startRaceAnimation();
 
@@ -836,6 +1511,11 @@
       var finish = track.querySelector(".finish-line");
       track.innerHTML = "";
       if (finish) track.appendChild(finish);
+      else {
+        finish = document.createElement("div");
+        finish.className = "finish-line";
+        track.appendChild(finish);
+      }
 
       var isExc = CONDITION.EXCITING;
       if (isExc) track.classList.add("exciting-mode");
@@ -869,9 +1549,18 @@
 
         var horse = document.createElement("div");
         horse.className = "horse";
-        horse.classList.add("exciting");
-        horse.textContent = "🐎";
+        horse.classList.add("exciting");   // always use circular emoji style
+        horse.textContent = "\uD83C\uDFC7";
+
         if (horseId === horseChosen) horse.classList.add("chosen");
+
+        // NEW: Position badges (exciting only)
+        if (isExc) {
+          var badge = document.createElement("div");
+          badge.className = "pos-badge";
+          badge.textContent = "";
+          horse.appendChild(badge);
+        }
 
         horse.style.left = "4%";
         lane.appendChild(horse);
@@ -879,9 +1568,9 @@
 
         var baseSpeed = 1;
         var speed;
-        if (horseId === horseChosen) speed = baseSpeed + 0.10;
+        if (horseId === horseChosen) speed = baseSpeed + (isExc ? 0.10 : 0.05);
         else {
-          var variance = 0.30;
+          var variance = isExc ? 0.30 : 0.10;
           speed = baseSpeed + (Math.random() - 0.5) * variance;
         }
 
@@ -899,12 +1588,16 @@
       feed.classList.toggle("exciting-feed", CONDITION.EXCITING);
       lastLeaderUpdateTime = 0;
 
+      if (!CONDITION.EXCITING) {
+        feed.textContent = " ";
+      }
+
       updateStaminaUI();
     }
 
     function startRaceAnimation() {
       raceStartPerfTime = performance.now();
-      var stepInterval = 250; // Non-boring
+      var stepInterval = CONDITION.EXCITING ? 250 : 1200;
 
       raceInterval = setInterval(function() {
         if (raceEnded) {
@@ -921,45 +1614,64 @@
         var baseFracRaw = Math.min(elapsed / RACE_TOTAL_MS, 1);
         var baseFrac = baseFracRaw;
 
-        var varScale = 1.0;
+        if (!CONDITION.EXCITING) baseFrac = Math.pow(baseFracRaw, 2.0);
+
+        // Extra boring-condition lead curve for the chosen horse
+        var chosen = horses.find(function(h) { return h.id === horseChosen; });
+        if (!CONDITION.EXCITING && chosen) {
+          var t = elapsed;
+          var leadBoost = 0;
+          if (t >= 100000 && t < 130000) {
+            var phaseFracUp = (t - 100000) / 30000;
+            leadBoost = 4.0 * phaseFracUp;
+          } else if (t >= 130000 && t < 150000) {
+            var phaseFracDown = (t - 130000) / 20000;
+            leadBoost = 3.0 * (1 - phaseFracDown);
+          }
+          if (leadBoost > 0) {
+            chosen.pos = Math.min(96, chosen.pos + leadBoost);
+          }
+        }
+
+        var varScale = CONDITION.EXCITING ? 1.0 : 0.04;
         var midShape = baseFrac * (1 - baseFrac);
 
-        var dtSec = 0.25;
+        var dtSec = (CONDITION.EXCITING ? 0.25 : 1.2);
         cheer.stamina = Math.min(1.0, cheer.stamina + cheer.staminaRegenPerSec * dtSec);
         updateStaminaUI();
+
         if (cheer.surge > 0) cheer.surge = Math.max(0, cheer.surge - cheer.surgeDecayPerTick);
 
         // 1) Base positions
         for (var i = 0; i < horses.length; i++) {
-  var h = horses[i];
-
-  // Remember where this horse was before this tick
-  var oldPos = h.pos;   // <-- this line is crucial
-
-  var offset = (h.speed - 1) * varScale * midShape;
-  var frac = baseFrac + offset;
-  if (frac < 0) frac = 0;
-  if (frac > 1) frac = 1;
-
-  var newPos = 4 + 92 * frac;
-  if (newPos > 96) newPos = 96;
-
-	// Prevent moving backwards
-  if (newPos < oldPos) {
-    newPos = oldPos;
-
-  }
-  h.pos = newPos;
-}
+          var h = horses[i];
+          var offset = (h.speed - 1) * varScale * midShape;
+          var frac = baseFrac + offset;
+          if (frac < 0) frac = 0;
+          if (frac > 1) frac = 1;
+          var pos = 4 + 92 * frac;
+          if (pos > 96) pos = 96;
+          h.pos = pos;
+        }
 
         // 2) Cheer surge effect
         var chosen = horses.find(function(h) { return h.id === horseChosen; });
         if (chosen) {
-          var cheerEffect = 0.80 * cheer.surge;
+          var cheerEffect = (CONDITION.EXCITING ? 0.80 : 0.15) * cheer.surge;
           chosen.pos = Math.min(96, chosen.pos + cheerEffect);
+
+          if (CONDITION.EXCITING && cheer.surge > 0.05) {
+            var others = horses.filter(function(h) { return h.id !== horseChosen; });
+            others.sort(function(a, b) { return b.pos - a.pos; });
+            var rivalsToPush = others.slice(1);
+            var weakenAmount = 0.20 * cheer.surge;
+            for (var r = 0; r < rivalsToPush.length; r++) {
+              rivalsToPush[r].pos = Math.max(4, rivalsToPush[r].pos - weakenAmount);
+            }
+          }
         }
 
-        // 3) Enforce chosen horse rank (1st or 2nd)
+        // 3) Enforce chosen horse rank (1st or 2nd) with narrow margin
         if (chosen) {
           var others = horses.filter(function(h) { return h.id !== horseChosen; });
           others.sort(function(a, b) { return b.pos - a.pos; });
@@ -970,10 +1682,18 @@
             var marginLead = 0.5;
             var marginTrail = 0.4;
 
-            var pLeadBase = 0.3 + 0.7 * baseFracRaw;
-            var pLeadBoost = pLeadBase + 0.06 * cheer.surge;
-            var pLead = Math.min(0.98, pLeadBoost);
-            var targetRank = Math.random() < pLead ? 1 : 2;
+            var targetRank;
+            if (CONDITION.EXCITING) {
+              var pLeadBase = 0.3 + 0.7 * baseFracRaw;
+              var pLeadBoost = pLeadBase + 0.06 * cheer.surge;
+              var pLead = Math.min(0.98, pLeadBoost);
+              targetRank = Math.random() < pLead ? 1 : 2;
+            } else {
+              var pLeadBaseBoring = baseFracRaw < 0.6 ? 0.25 : 0.55;
+              var pLeadBoostBoring = pLeadBaseBoring + 0.025 * cheer.surge;
+              var pLeadBoring = Math.min(0.85, pLeadBoostBoring);
+              targetRank = Math.random() < pLeadBoring ? 1 : 2;
+            }
 
             if (targetRank === 1) {
               chosen.pos = Math.min(96, leader.pos + marginLead);
@@ -981,6 +1701,19 @@
               var targetPos = leader.pos - marginTrail;
               if (second && targetPos <= second.pos + 0.1) targetPos = second.pos + 0.1;
               chosen.pos = Math.max(4, Math.min(96, targetPos));
+            }
+
+            if (CONDITION.EXCITING) {
+              var nearestRival = others[0];
+              var maxGap = 2.0;
+              var gap = Math.abs(chosen.pos - nearestRival.pos);
+              if (gap > maxGap) {
+                if (chosen.pos > nearestRival.pos) {
+                  chosen.pos = nearestRival.pos + maxGap;
+                } else {
+                  chosen.pos = nearestRival.pos - maxGap;
+                }
+              }
             }
           }
         }
@@ -990,59 +1723,125 @@
           horses[j].el.style.left = horses[j].pos + "%";
         }
 
-	// 4b) Random trails on other horses (simulate other players cheering)
-for (var k = 0; k < horses.length; k++) {
-  var h2 = horses[k];
-
-  // Skip your own horse; its trail comes from real cheers
-  if (h2.id === horseChosen) continue;
-
-  // Small chance per tick; adjust 0.05 up/down for more/less activity
-  if (Math.random() < 0.05) {
-    var laneEl2 = h2.el.parentElement;
-    if (!laneEl2) continue;
-
-    var trail2 = document.createElement("div");
-    trail2.className = "horse-trail";
-
-    // Place trail slightly behind that horse
-    var leftPct2 = h2.pos - 4;
-    if (leftPct2 < 0) leftPct2 = 0;
-    trail2.style.left = leftPct2 + "%";
-
-    laneEl2.appendChild(trail2);
-
-    requestAnimationFrame(function() {
-      trail2.classList.add("visible");
-    });
-    setTimeout(function() {
-      trail2.classList.remove("visible");
-      setTimeout(function() {
-        if (trail2.parentElement) trail2.parentElement.removeChild(trail2);
-      }, 160);
-    }, 160);
-  }
-}
-
-
-        // 5) Leader updates
-        var nowMs = performance.now();
-        if (nowMs - lastLeaderUpdateTime > LEADER_UPDATE_INTERVAL_MS) {
-          lastLeaderUpdateTime = nowMs;
-          var leaderHorse = horses.slice().sort(function(a, b) { return b.pos - a.pos; })[0];
-          if (leaderHorse) {
-            var feed = el("status-feed");
-            var actor = leaderHorse.actorLabel || ("Player " + leaderHorse.id);
-            var msg = (leaderHorse.id === horseChosen)
-              ? "You are currently leading."
-              : (actor + " is currently leading.");
-            feed.innerHTML = '<span class="status-msg">' + msg + '</span>';
-            logEvent("leader_update", {
-              leaderHorse: leaderHorse.id,
-              leaderActor: leaderHorse.actorLabel,
-              message: msg
-            });
+        // 4b) Automatic "crowd cheers" for other horses (Non-boring only)
+        if (CONDITION.EXCITING) {
+          var crowdCheerChance = 0.10;
+          if (Math.random() < crowdCheerChance) {
+            var others = horses.filter(function(h) { return h.id !== horseChosen; });
+            if (others.length > 0) {
+              var idx = Math.floor(Math.random() * others.length);
+              var other = others[idx];
+              other.pos = Math.min(96, other.pos + 0.10);
+              other.el.style.left = other.pos + "%";
+              var laneEl = other.el.parentElement;
+              if (laneEl) spawnTrail(laneEl, other.pos);
+            }
           }
+        }
+
+        // 5) Leader updates & exciting enhancements
+        if (CONDITION.EXCITING) {
+          var nowMs = performance.now();
+
+          // Position badges
+          updatePositionBadges();
+
+          // Progress bar
+          updateProgressBar(elapsed, RACE_TOTAL_MS);
+
+          // Track heat-up
+          updateHeatLevel(elapsed, RACE_TOTAL_MS);
+
+          // Lead change detection & commentary
+          if (nowMs - lastLeaderUpdateTime > LEADER_UPDATE_INTERVAL_MS) {
+            lastLeaderUpdateTime = nowMs;
+
+            var sorted = horses.slice().sort(function(a, b) { return b.pos - a.pos; });
+            var leaderHorse = sorted[0];
+
+            if (leaderHorse) {
+              var currentLeaderId = leaderHorse.id;
+
+              // Check if lead changed
+              if (lastLeaderId !== null && currentLeaderId !== lastLeaderId) {
+                leadChangeCount++;
+                var isPlayerNowLeading = (currentLeaderId === horseChosen);
+
+                // Visual: flash + shake + particles on lead change
+                flashLeadChange(isPlayerNowLeading);
+                shakeTrack();
+                playCrowdRoar();
+
+                // Particles at the leader's position
+                var laneEl = leaderHorse.el.parentElement;
+                if (laneEl) {
+                  var rect = leaderHorse.el.getBoundingClientRect();
+                  var laneRect = laneEl.getBoundingClientRect();
+                  spawnParticles(laneEl,
+                    rect.left - laneRect.left + rect.width / 2,
+                    rect.top - laneRect.top + rect.height / 2,
+                    8,
+                    isPlayerNowLeading
+                      ? ["#22c55e", "#4ade80", "#86efac", "#fbbf24"]
+                      : ["#ef4444", "#f87171", "#fca5a5", "#fbbf24"]
+                  );
+                }
+
+                // Commentary
+                if (isPlayerNowLeading) {
+                  showCommentary("playerLeading", null, true);
+                } else {
+                  var rivalLabel = leaderHorse.actorLabel || ("Horse " + leaderHorse.id);
+                  showCommentary("rivalLeading", { rival: rivalLabel }, true);
+                }
+
+                logEvent("lead_change", {
+                  newLeader: currentLeaderId,
+                  newLeaderActor: leaderHorse.actorLabel,
+                  leadChangeCount: leadChangeCount
+                });
+              } else {
+                // No lead change — show contextual commentary
+                var gap2 = sorted.length > 1 ? Math.abs(sorted[0].pos - sorted[1].pos) : 99;
+
+                if (baseFracRaw > 0.8) {
+                  showCommentary("finalStretch", null, true);
+                } else if (gap2 < 1.5) {
+                  showCommentary("closeRace", null, false);
+                } else {
+                  // Standard leader update (less frequent)
+                  if (Math.random() < 0.4) {
+                    var msg;
+                    if (CONDITION.FOMO) {
+                      var actor = leaderHorse.actorLabel || ("Player " + leaderHorse.id);
+                      msg = (leaderHorse.id === horseChosen)
+                        ? "You are currently leading."
+                        : (actor + " is currently leading.");
+                    } else {
+                      msg = "Horse " + leaderHorse.id + " is currently leading.";
+                    }
+                    var feed = el("status-feed");
+                    if (feed) {
+                      feed.innerHTML = '<span class="status-msg">' + msg + '</span>';
+                    }
+                  }
+                }
+              }
+
+              lastLeaderId = currentLeaderId;
+            }
+          }
+
+          // Periodic sparkles on chosen horse
+          if (Math.random() < 0.06) {
+            var ch = horses.find(function(h) { return h.id === horseChosen; });
+            if (ch) spawnSparkles(ch.el);
+          }
+        }
+
+        // 6) End race for non-FoMO when finished
+        if (!CONDITION.FOMO && baseFracRaw >= 1 && !raceEnded) {
+          endRace("all_finished");
         }
       }, stepInterval);
     }
@@ -1061,6 +1860,9 @@ for (var k = 0; k < horses.length; k++) {
 
       var feed = el("status-feed");
       if (feed) feed.style.display = "none";
+
+      var progressWrap = el("race-progress-wrap");
+      if (progressWrap) progressWrap.classList.remove("visible");
 
       var chosen = horses.find(function(h) { return h.id === horseChosen; });
       if (chosen) {
@@ -1099,7 +1901,7 @@ for (var k = 0; k < horses.length; k++) {
 
     function computeWinnerId() {
       if (!horses || horses.length === 0) return null;
-      // In FoMO case, winner is whoever is ahead at interrupt/race end
+      if (!CONDITION.FOMO && horseChosen != null) return horseChosen;
       var best = horses[0];
       for (var i = 1; i < horses.length; i++) {
         if (horses[i].pos > best.pos) best = horses[i];
@@ -1113,6 +1915,53 @@ for (var k = 0; k < horses.length; k++) {
         if (nodes[i].checked) return nodes[i].value;
       }
       return null;
+    }
+
+    function buildLeaderboardHTML() {
+      // Sort non-player horses by position descending
+      var playerHorse = null;
+      var others = [];
+      for (var i = 0; i < horses.length; i++) {
+        if (horses[i].id === horseChosen) playerHorse = horses[i];
+        else others.push(horses[i]);
+      }
+      others.sort(function(a, b) { return b.pos - a.pos; });
+
+      // Player's horse WINS (rank 1), others fill rank 2 and 3
+      var podium = [];
+      // Rank 1 = player
+      if (playerHorse) {
+        podium.push({ rank: 1, name: "You", isYou: true });
+      }
+      // Rank 2 = top other horse
+      if (others.length >= 1) {
+        podium.push({ rank: 2, name: others[0].actorLabel, isYou: false });
+      }
+      // Rank 3 = second other horse
+      if (others.length >= 2) {
+        podium.push({ rank: 3, name: others[1].actorLabel, isYou: false });
+      }
+
+      var medals = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"]; // gold, silver, bronze
+      var rankLabels = ["1st Place", "2nd Place", "3rd Place"];
+
+      // 3-column podium: Rank2 (left) | Winner (middle) | Rank3 (right)
+      var html = '<div class="podium-container">';
+      for (var j = 0; j < podium.length; j++) {
+        var p = podium[j];
+        var medal = medals[p.rank - 1] || "";
+        var label = rankLabels[p.rank - 1] || "";
+        html += '<div class="podium-col podium-' + p.rank + '">';
+        html += '<span class="podium-medal">' + medal + '</span>';
+        html += '<div class="podium-rank">' + label + '</div>';
+        html += '<div class="podium-name">' + p.name + '</div>';
+        if (p.isYou) {
+          html += '<span class="podium-you-tag">YOUR HORSE</span>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+      return html;
     }
 
     function endRace(reason) {
@@ -1129,11 +1978,30 @@ for (var k = 0; k < horses.length; k++) {
       stopAllAudio();
 
       var winnerId = computeWinnerId();
-      logEvent("race_end", { reason: reason, winner: winnerId });
+      logEvent("race_end", { reason: reason, winner: winnerId, leadChanges: leadChangeCount });
 
       var endMsgEl = el("end-message-main");
+      var lbEl = el("leaderboard");
+      if (lbEl) lbEl.style.display = "none";
+
       if (endMsgEl) {
-        endMsgEl.textContent = "You participation in the game is now over";
+        if (!CONDITION.FOMO) {
+          if (CONDITION.EXCITING) {
+            // Non-FoMO + Non-boring: show podium with player's horse as winner
+            endMsgEl.innerHTML = '<span style="font-weight:bold;color:#16a34a;">Your horse won!</span>';
+            if (lbEl) {
+              lbEl.style.display = "block";
+              lbEl.innerHTML = buildLeaderboardHTML();
+            }
+          } else {
+            // Non-FoMO + Boring: just say the horse won
+            endMsgEl.innerHTML =
+              '<span style="font-weight:bold;color:#16a34a;">Your horse won!</span>';
+          }
+        } else {
+          endMsgEl.textContent =
+            "Your participation in the game is now over.";
+        }
       }
 
       showScreen("end");
@@ -1147,17 +2015,12 @@ for (var k = 0; k < horses.length; k++) {
       if (sessionEnded) return;
       sessionEnded = true;
 
-      var boredomRating = getRatingValue("boredom");
-      var fomoRating = getRatingValue("fomo_rating");
-
       logEvent("session_end", {
         participantId: CONDITION.participantId,
         FOMO: CONDITION.FOMO,
         EXCITING: CONDITION.EXCITING,
         horseChosen: horseChosen,
-        hasBonus: conditionHasLottery(),
-        boredomRating: boredomRating,
-        fomoRating: fomoRating
+        hasBonus: conditionHasLottery()
       });
 
       var payload = {
@@ -1166,24 +2029,18 @@ for (var k = 0; k < horses.length; k++) {
         EXCITING: CONDITION.EXCITING,
         horseChosen: horseChosen,
         hasBonus: conditionHasLottery(),
-        boredomRating: boredomRating,
-        fomoRating: fomoRating,
         events: logEvents
       };
 
       try {
         if (typeof window.qualtricsSetData === "function") {
-          window.qualtricsSetData("game_log_json", JSON.stringify(payload));
-          window.qualtricsSetData("fomo", 1);
-          window.qualtricsSetData("boredom", 0);
-          window.qualtricsSetData("hasBonus", 1);
-          window.qualtricsSetData("horseChosen", horseChosen || "");
-          window.qualtricsSetData("boredomRating", boredomRating || "");
-          window.qualtricsSetData("fomoRating", fomoRating || "");
+          window.qualtricsSetData("gamelog_json", JSON.stringify(payload));
+          window.qualtricsSetData("fomo", CONDITION.FOMO ? 1 : 0);
+          window.qualtricsSetData("boredom", CONDITION.EXCITING ? 0 : 1);
+          window.qualtricsSetData("hasBonus", conditionHasLottery() ? 1 : 0);
+          window.qualtricsSetData("horseChosen", horseChosen);
         }
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) { /* ignore */ }
     }
 
     /***********************
@@ -1191,6 +2048,7 @@ for (var k = 0; k < horses.length; k++) {
      ***********************/
     window.addEventListener("load", function() {
       logEvent("session_start", { participantId: CONDITION.participantId });
+      initConditionUI();
       setupIntro();
       setupHorseChoice();
     });
