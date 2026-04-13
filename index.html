@@ -648,9 +648,9 @@
       <p id="end-message-main"></p>
       <div id="leaderboard" style="display:none;"></div>
       <div id="ratings-block">
-        <p style="margin-bottom:8px">
-          Please update the excel Sheet for this condition.
-        </p>
+       <button id="continueBtn" class="primary">
+      Continue to the next part of the study
+   	 </button>
       </div>
     </div>
   </div>
@@ -1814,6 +1814,20 @@
     document.addEventListener("visibilitychange", function() {
       logEvent("visibility_change", { state: document.visibilityState });
     });
+
+
+// Send message to Qualtrics when the end-screen button is clicked
+document.addEventListener("DOMContentLoaded", function () {
+  var btn = document.getElementById("continueBtn");
+  if (btn) {
+    btn.addEventListener("click", function () {
+      window.parent.postMessage(
+        { type: "goToNextPage" },
+        "https://hecmontreal.eu.qualtrics.com"
+      );
+    });
+  }
+});
   </script>
 </body>
 </html>
