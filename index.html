@@ -186,7 +186,7 @@
 }
 
 #race-video-panel.hidden-by-fomo::before {
-  content: " ";
+  content: "Race broadcast unavailable while you move to the next study step.";
   position: absolute;
   inset: 0;
   z-index: 4;
@@ -826,12 +826,13 @@
     </div>
 
     <aside id="race-video-panel" aria-label="Race broadcast panel">
-      <div id="video-audio-hint">/div>
+	<div id="video-audio-hint"></div>
 
       
 
 <video id="race-atmo-video" autoplay muted playsinline preload="metadata">
-<source src="https://sharmahec.github.io/FoMO-Non-Boredom/HorseRaceVideocomplete.mp4" type="video/mp4">  Your browser does not support the video tag.
+  <source src="./HorseRaceVideocomplete.mp4" type="video/mp4">
+  Your browser does not support the video tag.
 </video>      
 
 
@@ -984,7 +985,8 @@ function setupRaceVideoPanel() {
   raceVideoState.finalStretch = false;
 
   try { video.currentTime = 0; } catch (e) {}
-  video.muted = true;
+  video.muted = false;
+  video.volume = 0.75;
   video.loop = false;
   syncRaceVideoPlayback();
 
